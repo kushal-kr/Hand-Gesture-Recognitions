@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HGR - Hand Gesture Recognition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --secondary-color: #8338ec;
+            --accent-color: #ff006e;
+            --success-color: #38b000;
+            --text-color: #f8f9fa;
+            --dark-bg: rgba(0, 0, 0, 0.7);
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --hover-color: #ff9e00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            background-color: #111;
+            overflow-x: hidden;
+        }
+
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("{{ url_for('static', filename='background.jpg') }}");
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            filter: brightness(0.7);
+            z-index: -1;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 100%);
+            z-index: -1;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeIn 1s ease-out;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            animation: slideUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--hover-color);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(58, 134, 255, 0.2) 0%, rgba(255, 0, 110, 0.2) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .icon-wrapper {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-color);
+        }
+
+        .feature-description {
+            font-size: 0.95rem;
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            transition: all 0.4s ease;
+            z-index: -1;
+        }
+
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .status-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark-bg);
+            color: var(--text-color);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .status-message.show {
+            opacity: 1;
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        .status-message.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .status-message.error {
+            border-left: 4px solid var(--accent-color);
+        }
+
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* Animation delays for cards */
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card:nth-child(4) { animation-delay: 0.4s; }
+        .feature-card:nth-child(5) { animation-delay: 0.5s; }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    <div class="overlay"></div>
+    
+    <div class="container">
+        <header>
+            <h1>Hand Gesture Recognition</h1>
+            <p class="subtitle">Control your digital world with simple hand gestures. Select a feature below to get started.</p>
+            <div id="controlPanel" style="display: none; margin-top: 20px;">
+                <button id="terminateBtn" class="btn" style="background: linear-gradient(135deg, #ff006e, #ff5e00);">
+                    <i class="fas fa-stop-circle"></i> Stop Current Control
+                </button>
+            </div>
+        </header>
+        
+        <div class="features-grid">
+            <div class="feature-card" onclick="runScript('camera')">
+                <div class="icon-wrapper">
+                    <i class="fas fa-camera feature-icon"></i>
+                </div>
+                <h3 class="feature-title">Camera Control</h3>
+                <p class="feature-description">Take photos and control your camera with simple hand gestures.</p>
+                <button class="btn">Launch Camera</button>
+            </div>
+            
+            <div class="feature-card" onclick="runScript('youtube')">
+                <div class="icon-wrapper">
+                    <i class="fab fa-youtube feature-icon"></i>
+                </div>
+                <h3 class="feature-title">video Controls</h3>
+                <p class="feature-description">Control playback with intuitive hand movements.</p>
+                <button class="btn">Launch video</button>
+            </div>
+            
+            <div class="feature-card" onclick="runScript('mouse')">
+                <div class="icon-wrapper">
+                    <i class="fas fa-mouse feature-icon"></i>
+                </div>
+                <h3 class="feature-title">Mouse Control</h3>
+                <p class="feature-description">Navigate your computer using hand gestures as a virtual mouse.</p>
+                <button class="btn">Launch Mouse</button>
+            </div>
+            
+            <div class="feature-card" onclick="runScript('ppt')">
+                <div class="icon-wrapper">
+                    <i class="fas fa-file-powerpoint feature-icon"></i>
+                </div>
+                <h3 class="feature-title">Presentation Controls</h3>
+                <p class="feature-description">Control your presentations with natural hand movements.</p>
+                <button class="btn">Launch PPT</button>
+            </div>
+            
+            <div class="feature-card" onclick="runScript('volume')">
+                <div class="icon-wrapper">
+                    <i class="fas fa-volume-up feature-icon"></i>
+                </div>
+                <h3 class="feature-title">Volume Control</h3>
+                <p class="feature-description">Adjust system volume with simple hand gestures.</p>
+                <button class="btn">Launch Volume</button>
+            </div>
+            
+            <div class="feature-card" onclick="runScript('signlanguage')">
+                <div class="icon-wrapper">
+                    <i class="fas fa-sign-language feature-icon"></i>
+                </div>
+                <h3 class="feature-title">Sign Language</h3>
+                <p class="feature-description">Recognize common sign language gestures and display their meaning.</p>
+                <button class="btn">Launch Sign Language</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 Hand Gesture Recognition System | Powered by AI</p>
+        </footer>
+    </div>
+    
+    <div id="statusMessage" class="status-message">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span id="statusText">Processing...</span>
+    </div>
+
+    <script>
+        // Global state
+        let activeControl = null;
+        
+        // Animation for feature cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                }, 100);
+            });
+            
+            // Set up terminate button
+            document.getElementById('terminateBtn').addEventListener('click', terminateCurrentControl);
+        });
+
+        function showStatus(message, type = 'success') {
+            const statusEl = document.getElementById('statusMessage');
+            const statusTextEl = document.getElementById('statusText');
+            
+            statusTextEl.textContent = message;
+            statusEl.className = 'status-message show ' + type;
+            
+            if (type === 'success') {
+                statusEl.innerHTML = '<i class="fas fa-check-circle"></i><span>' + message + '</span>';
+            } else {
+                statusEl.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>' + message + '</span>';
+            }
+            
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 3000);
+        }
+        
+        function terminateCurrentControl() {
+            if (!activeControl) return;
+            
+            showStatus('Stopping ' + activeControl + '...', 'success');
+            
+            fetch('/terminate_current')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showStatus(data.message, 'success');
+                        document.getElementById('controlPanel').style.display = 'none';
+                        activeControl = null;
+                    } else {
+                        showStatus(data.message, 'error');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    showStatus('Error stopping control', 'error');
+                });
+        }
+
+        function runScript(scriptName) {
+            // Show loading status
+            showStatus('Launching ' + scriptName + '...', 'success');
+            
+            // Add visual feedback to the clicked card
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => {
+                if (card.querySelector('.feature-title').textContent.toLowerCase().includes(scriptName.replace('ppt', 'presentation'))) {
+                    card.style.animation = 'pulse 0.5s';
+                    setTimeout(() => {
+                        card.style.animation = '';
+                    }, 500);
+                }
+            });
+            
+            // If there's an active control, terminate it first
+            if (activeControl) {
+                fetch('/terminate_current')
+                    .then(() => launchControl(scriptName))
+                    .catch(() => launchControl(scriptName));
+            } else {
+                launchControl(scriptName);
+            }
+        }
+        
+        function launchControl(scriptName) {
+            fetch('/run_' + scriptName)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    if (data.status === 'success') {
+                        showStatus(data.message, 'success');
+                        activeControl = scriptName;
+                        document.getElementById('controlPanel').style.display = 'block';
+                    } else {
+                        showStatus(data.message, 'error');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    showStatus('Error launching ' + scriptName, 'error');
+                });
+        }
+    </script>
+</body>
+</html>
